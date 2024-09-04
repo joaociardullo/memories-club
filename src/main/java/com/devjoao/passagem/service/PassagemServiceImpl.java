@@ -66,7 +66,7 @@ public class PassagemServiceImpl implements PassagemService {
     public PassagemResponseDTO toResponseDTO(PassagemEntity passagemEntity) {
         PassagemResponseDTO responseDTO = new PassagemResponseDTO();
         responseDTO.setCode(HttpStatus.CREATED);
-        responseDTO.setMessage("Dado cadastrado com sucesso:");
+        responseDTO.setMessage("Dados cadastrado com sucesso:");
         responseDTO.setContent(passagemEntity);
         return responseDTO;
     }
