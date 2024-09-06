@@ -17,7 +17,7 @@ public class PassagemController {
     private PassagemServiceImpl service;
 
     @PostMapping("/cadastrarPassagem")
-    public ResponseEntity<PassagemResponseDTO> cadastarPassagem(@RequestBody PassagemRequestDTO requestDTO) {
+    public ResponseEntity<PassagemResponseDTO> cadastarClientePassagem(@RequestBody PassagemRequestDTO requestDTO) {
         log.info("PASSAGEM: [{}]", requestDTO);
         var response = service.cadastroPassagemCliente(requestDTO);
         return ResponseEntity.ok(response);
