@@ -43,11 +43,14 @@ public class PassagemEntity {
     @Column(name = "companhia_area")
     private String companhiaArea;
 
-    @Column(name = "CPF")
+    @Column(name = "CPF", length = 11)
     private String cpf;
 
     @Column(name = "celular")
     private String celular;
+
+    @Column(name = "email",length = 50)
+    private String email;
 
     private EnderecoCepDTO cep;
 

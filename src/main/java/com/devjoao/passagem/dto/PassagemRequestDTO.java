@@ -32,4 +32,6 @@ public class PassagemRequestDTO {
     private String celular;
 
     private String cep;
+
+    private String email;
 }

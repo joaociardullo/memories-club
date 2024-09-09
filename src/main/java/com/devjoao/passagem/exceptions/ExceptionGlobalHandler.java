@@ -29,8 +29,10 @@ public class ExceptionGlobalHandler {
     public ResponseEntity<ErrorResponseDTO> handleInvalidPropertiesFormatException(InvalidPropertiesFormatException ex) {
         var errorResponse = ErrorResponseDTO.builder()
                 .status(String.valueOf(HttpStatus.BAD_REQUEST.value()))
-                .message("Dados invalidos")
-                .erro(ex.getMessage())
+                .path("/passagem/cadastrarPassagem")
+                .message(ex.getMessage())
+                .erro(ex.getLocalizedMessage())
+                .timesStamp(String.valueOf(LocalDateTime.now()))
                 .build();
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
@@ -46,5 +48,33 @@ public class ExceptionGlobalHandler {
                 .build();
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
+
+    @ExceptionHandler(value = {CpfException.class})
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ResponseEntity<ErrorResponseDTO> handleCpfException(CpfException ex) {
+        var errorResponse = ErrorResponseDTO.builder()
+                .status(String.valueOf(HttpStatus.BAD_REQUEST.value()))
+                .message("CPF Cadastrado ja existe na base de dados: ")
+                .path("/passagem/cadastrarPassagem")
+                .erro(ex.getMessage())
+                .timesStamp(String.valueOf(LocalDateTime.now()))
+                .build();
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+
+    @ExceptionHandler(value = {CpfNullException.class})
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ResponseEntity<ErrorResponseDTO> handleCpfNullException(CpfNullException ex) {
+        var errorResponse = ErrorResponseDTO.builder()
+                .status(String.valueOf(HttpStatus.BAD_REQUEST.value()))
+                .path("/passagem/cadastrarPassagem")
+                .message(ex.getMessage())
+                .erro(ex.getLocalizedMessage())
+                .timesStamp(String.valueOf(LocalDateTime.now()))
+                .build();
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
 
 }

@@ -4,6 +4,8 @@ import com.devjoao.passagem.dto.EnderecoCepDTO;
 import com.devjoao.passagem.dto.PassagemRequestDTO;
 import com.devjoao.passagem.dto.PassagemResponseDTO;
 import com.devjoao.passagem.entity.PassagemEntity;
+import com.devjoao.passagem.exceptions.CpfException;
+import com.devjoao.passagem.exceptions.CpfNullException;
 import com.devjoao.passagem.exceptions.InvalidPropertiesFormatException;
 import com.devjoao.passagem.exceptions.NumberFormatException;
 import com.devjoao.passagem.integration.EnderecoClient;
@@ -34,22 +36,33 @@ public class PassagemServiceImpl implements PassagemService {
         log.info("Dados da passagem: [{}] ", requestDTO);
 
         try {
+            if (requestDTO.getCpf().isEmpty()) {
+                throw new CpfNullException("Inserir o CPF");
+            }
+            if (requestDTO.getCpf().length() != 11) {
+                throw new CpfNullException("Tamanho de cpf invalido: Digite corretamente");
+            }
             var buscarcpf = repository.findByCpf(requestDTO.getCpf());
             if (buscarcpf.get(0).getCpf() == null) {
-                throw new RuntimeException("Inserir o CPF");
+                throw new CpfException("CPF não existe");
             }
 
-            if (buscarcpf.get(0).getCpf().equals(requestDTO.getCpf())){
-                throw new RuntimeException("CPF já cadastrado");
+            if (buscarcpf.get(0).getCpf().equals(requestDTO.getCpf())) {
+                throw new CpfException("CPF já cadastrado");
             }
 
-            if (requestDTO.getCep().length() <= 11 && requestDTO.getCep() == null) {
+            if (requestDTO.getCep().length() != 11 && requestDTO.getCep() == null) {
                 throw new NumberFormatException("Cep nao segue o padrão !");
             }
             if (requestDTO.getDiaViagem().equals(null)) {
                 throw new InvalidPropertiesFormatException("Obrigatorio passar a data da viagem.");
             }
-
+            if (requestDTO.getNomeCliente().isBlank()) {
+                throw new InvalidPropertiesFormatException("Obrigatorio passar o nome do cliente.");
+            }
+            if (requestDTO.getEmail() == null || requestDTO.getEmail().isEmpty() || !requestDTO.getEmail().contains("@")) {
+                throw new InvalidPropertiesFormatException("Obrigatorio ter '@' no email.");
+            }
             log.info("Buscar endereco para cadastramento: [{}] ", requestDTO.getCep());
             EnderecoCepDTO cep = client.buscarEndereco(requestDTO.getCep());
 

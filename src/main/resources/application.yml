@@ -1,8 +1,8 @@
 spring:
   datasource:
-    password: admin
+    password: 1234
     url: jdbc:postgresql://localhost:5432/memoriesclub
-    username: admin
+    username: postgres
     datasource:
       driver-class-name: org.postgresql.Driver
   jpa:
