@@ -5,15 +5,18 @@ import com.devjoao.passagem.dto.PassagemRequestDTO;
 import com.devjoao.passagem.dto.PassagemResponseDTO;
 import com.devjoao.passagem.entity.PassagemEntity;
 import com.devjoao.passagem.exceptions.CpfException;
-import com.devjoao.passagem.exceptions.CpfNullException;
+import com.devjoao.passagem.exceptions.IdInvalidException;
 import com.devjoao.passagem.exceptions.InvalidPropertiesFormatException;
-import com.devjoao.passagem.exceptions.NumberFormatException;
 import com.devjoao.passagem.integration.EnderecoClient;
 import com.devjoao.passagem.mappper.PassagemMapper;
 import com.devjoao.passagem.repositorie.PassagemEntityRepository;
+import com.devjoao.passagem.validatorStrategy.IdValidator;
+import com.devjoao.passagem.validatorStrategy.ValidationStrategy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 
 @Service
@@ -21,48 +24,33 @@ import org.springframework.stereotype.Service;
 public class PassagemServiceImpl implements PassagemService {
 
     final PassagemEntityRepository repository;
-
     final PassagemMapper mapper;
-
     final EnderecoClient client;
+    final List<ValidationStrategy.Validator> validators;
+    private final List<IdValidator.Validator> validatores;
 
-    public PassagemServiceImpl(PassagemEntityRepository repository, PassagemMapper mapper, EnderecoClient client) {
+    public PassagemServiceImpl(PassagemEntityRepository repository, PassagemMapper mapper, EnderecoClient client, List<ValidationStrategy.Validator> validators, List<IdValidator.Validator> validatores) {
         this.repository = repository;
         this.mapper = mapper;
         this.client = client;
+        this.validators = validators;
+        this.validatores = validatores;
     }
 
     public PassagemResponseDTO cadastroPassagemCliente(PassagemRequestDTO requestDTO) throws InvalidPropertiesFormatException {
         log.info("Dados da passagem: [{}] ", requestDTO);
-
         try {
-            if (requestDTO.getCpf().isEmpty()) {
-                throw new CpfNullException("Inserir o CPF");
-            }
-            if (requestDTO.getCpf().length() != 11) {
-                throw new CpfNullException("Tamanho de cpf invalido: Digite corretamente");
+            for (ValidationStrategy.Validator validator : validators) {
+                validator.validate(requestDTO);
             }
             var buscarcpf = repository.findByCpf(requestDTO.getCpf());
             if (buscarcpf.get(0).getCpf() == null) {
                 throw new CpfException("CPF não existe");
             }
-
             if (buscarcpf.get(0).getCpf().equals(requestDTO.getCpf())) {
                 throw new CpfException("CPF já cadastrado");
             }
 
-            if (requestDTO.getCep().length() != 11 && requestDTO.getCep() == null) {
-                throw new NumberFormatException("Cep nao segue o padrão !");
-            }
-            if (requestDTO.getDiaViagem().equals(null)) {
-                throw new InvalidPropertiesFormatException("Obrigatorio passar a data da viagem.");
-            }
-            if (requestDTO.getNomeCliente().isBlank()) {
-                throw new InvalidPropertiesFormatException("Obrigatorio passar o nome do cliente.");
-            }
-            if (requestDTO.getEmail() == null || requestDTO.getEmail().isEmpty() || !requestDTO.getEmail().contains("@")) {
-                throw new InvalidPropertiesFormatException("Obrigatorio ter '@' no email.");
-            }
             log.info("Buscar endereco para cadastramento: [{}] ", requestDTO.getCep());
             EnderecoCepDTO cep = client.buscarEndereco(requestDTO.getCep());
 
@@ -81,8 +69,7 @@ public class PassagemServiceImpl implements PassagemService {
     }
 
     private static EnderecoCepDTO getEnderecoCepDTO(EnderecoCepDTO cep) {
-        EnderecoCepDTO enderecoCepDTO = EnderecoCepDTO.builder().cep(cep.getCep()).bairro(cep.getBairro()).uf(cep.getUf()).regiao(cep.getRegiao()).estado(cep.getEstado()).localidade(cep.getLocalidade()).logradouro(cep.getLogradouro()).bairro(cep.getBairro()).build();
-        return enderecoCepDTO;
+        return EnderecoCepDTO.builder().cep(cep.getCep()).bairro(cep.getBairro()).uf(cep.getUf()).regiao(cep.getRegiao()).estado(cep.getEstado()).localidade(cep.getLocalidade()).logradouro(cep.getLogradouro()).bairro(cep.getBairro()).build();
     }
 
     public PassagemResponseDTO toResponseDTO(PassagemEntity passagemEntity) {
@@ -95,13 +82,34 @@ public class PassagemServiceImpl implements PassagemService {
 
     public PassagemResponseDTO bucarClienteCadastrado(String id) {
 
-        var result = repository.findById(Long.valueOf(id));
+        try {
+            for (IdValidator.Validator validator : validatores) {
+                validator.validate(id);
+            }
+            var result = repository.findById(Long.valueOf(id));
+            if (result.isPresent()) {
+                PassagemResponseDTO responseDTO = new PassagemResponseDTO();
+                responseDTO.setCode(HttpStatus.ACCEPTED);
+                responseDTO.setMessage("Dado buscado com sucesso:");
+                responseDTO.setContent(result);
+                return responseDTO;
+            } else {
+                log.error("Erro ao fazer a busca");
+                throw new InvalidPropertiesFormatException("erro de sistema");
+            }
+        } catch (InvalidPropertiesFormatException e) {
+            throw new IdInvalidException(e.getMessage());
+        }
+    }
+
+    public PassagemResponseDTO buscarTodosClientes() {
+        log.info("Buscar todos cadastro dos clientes: ");
+        List<PassagemEntity> listCadastro = repository.findAll();
         PassagemResponseDTO responseDTO = new PassagemResponseDTO();
-        responseDTO.setCode(HttpStatus.ACCEPTED);
+        responseDTO.setCode(HttpStatus.OK);
         responseDTO.setMessage("Dado buscado com sucesso:");
-        responseDTO.setContent(result);
+        responseDTO.setContent(listCadastro);
 
         return responseDTO;
-
     }
 }

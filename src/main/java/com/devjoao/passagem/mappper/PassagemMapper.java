@@ -8,6 +8,8 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public interface PassagemMapper {
@@ -16,4 +18,7 @@ public interface PassagemMapper {
 
     @Mapping(target = "cep", source = "cep")
     EnderecoCepDTO stringToEnderecoCepDTO(String cep);
+
+
+    List<PassagemEntity> toResponse(List<PassagemEntity> passagemResponseDTO);
 }

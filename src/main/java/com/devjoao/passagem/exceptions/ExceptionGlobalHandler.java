@@ -31,7 +31,6 @@ public class ExceptionGlobalHandler {
                 .status(String.valueOf(HttpStatus.BAD_REQUEST.value()))
                 .path("/passagem/cadastrarPassagem")
                 .message(ex.getMessage())
-                .erro(ex.getLocalizedMessage())
                 .timesStamp(String.valueOf(LocalDateTime.now()))
                 .build();
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
@@ -71,6 +70,18 @@ public class ExceptionGlobalHandler {
                 .path("/passagem/cadastrarPassagem")
                 .message(ex.getMessage())
                 .erro(ex.getLocalizedMessage())
+                .timesStamp(String.valueOf(LocalDateTime.now()))
+                .build();
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(value = {IdInvalidException.class})
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ResponseEntity<ErrorResponseDTO> handleIdInvalidException(IdInvalidException ex) {
+        var errorResponse = ErrorResponseDTO.builder()
+                .status(String.valueOf(HttpStatus.BAD_REQUEST.value()))
+                .path("/passagem/buscarTodosClientes")
+                .message(ex.getMessage())
                 .timesStamp(String.valueOf(LocalDateTime.now()))
                 .build();
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);

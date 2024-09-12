@@ -20,7 +20,6 @@ public class PassagemController {
 
     @PostMapping("/cadastrarPassagem")
     public ResponseEntity<PassagemResponseDTO> cadastarClientePassagem(@RequestBody PassagemRequestDTO requestDTO) throws InvalidPropertiesFormatException {
-        log.info("PASSAGEM: [{}]", requestDTO);
         var response = service.cadastroPassagemCliente(requestDTO);
         return ResponseEntity.ok(response);
     }
@@ -28,6 +27,13 @@ public class PassagemController {
     @GetMapping("/{id}")
     public ResponseEntity<PassagemResponseDTO> buscarCliente(@PathVariable("id") String id) {
         var result = service.bucarClienteCadastrado(id);
+        return ResponseEntity.ok(result);
+
+    }
+
+    @GetMapping(value = "/buscarTodosClientes")
+    public ResponseEntity<PassagemResponseDTO> buscarTodosCliente() {
+        var result = service.buscarTodosClientes();
         return ResponseEntity.ok(result);
 
     }
