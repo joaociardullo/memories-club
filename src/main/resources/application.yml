@@ -10,3 +10,13 @@ spring:
       hibernate:
         ddl-auto: update
         dialect: org.hibernate.dialect.PostgreSQLDialect
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+
+  kafka:
+    template:
+      observation-enabled: 'true'

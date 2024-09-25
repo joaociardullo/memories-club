@@ -1,4 +1,4 @@
-package com.devjoao.passagem.controller;
+package com.devjoao.passagem.message;
 
 import com.devjoao.passagem.dto.PassagemRequestDTO;
 import com.devjoao.passagem.service.StringProducerService;
@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping(value = "/producer")
-public class StringProducerResource {
+public class KafkaProducerResource {
 
     private final StringProducerService producerService;
 
