@@ -15,11 +15,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+
 
 @Service
 @Slf4j
 public class PassagemServiceImpl implements PassagemService {
 
+    public static final String ID_NAO_EXISTE_OU_O_CAMPO_NAO_FOI_INFORMADO = "id não existe ou o campo nao foi informado";
     final PassagemEntityRepository repository;
     final PassagemMapper mapper;
     final EnderecoClient client;
@@ -36,7 +41,6 @@ public class PassagemServiceImpl implements PassagemService {
     public PassagemResponseDTO cadastroPassagemCliente(PassagemRequestDTO requestDTO) throws InvalidPropertiesFormatException {
         log.info("Dados da passagem: [{}] ", requestDTO);
         try {
-
             if (requestDTO.getCep().length() != 11 && requestDTO.getCep() == null) {
                 throw new NumberFormatException("Cep nao segue o padrão !");
             }
@@ -56,17 +60,14 @@ public class PassagemServiceImpl implements PassagemService {
                 throw new InvalidPropertiesFormatException("Obrigatorio passar o nome do cliente.");
             }
 
-            var buscarcpf = repository.findByCpf(requestDTO.getCpf());
+            var  buscarcpf = repository.findByCpf(requestDTO.getCpf());
             if (!buscarcpf.isEmpty()) {
                 buscarcpf.get(0).getCpf();
                 throw new CpfException("CPF não existe");
             }
-            if (!buscarcpf.isEmpty()) {
-                if (buscarcpf.get(0).getCpf().equals(requestDTO.getCpf())) {
+            if (!buscarcpf.isEmpty() && buscarcpf.get(0).getCpf().equals(requestDTO.getCpf())) {
                     throw new CpfException("CPF já cadastrado");
-                }
             }
-
             log.info("Buscar endereco para cadastramento: [{}] ", requestDTO.getCep());
             EnderecoCepDTO cep = client.buscarEndereco(requestDTO.getCep());
 
@@ -96,17 +97,67 @@ public class PassagemServiceImpl implements PassagemService {
         return responseDTO;
     }
 
+    public PassagemResponseDTO toResponseDTOUpdate(PassagemEntity passagemEntity) {
+        PassagemResponseDTO responseDTO = new PassagemResponseDTO();
+        responseDTO.setCode(HttpStatus.ACCEPTED);
+        responseDTO.setMessage("Dados cadastrado com sucesso:");
+        responseDTO.setContent(passagemEntity);
+        return responseDTO;
+    }
+
+    @Override
+    public PassagemResponseDTO atualizarCadastroCliente(String id, PassagemRequestDTO requestDTO) {
+        log.info("PASSEI AQUI");
+        if (id.contains(" ")) {
+            throw new IdInvalidException(ID_NAO_EXISTE_OU_O_CAMPO_NAO_FOI_INFORMADO);
+
+        }
+        if (id == null) {
+            throw new IdInvalidException(ID_NAO_EXISTE_OU_O_CAMPO_NAO_FOI_INFORMADO);
+        }
+        if (Objects.isNull(requestDTO)) {
+            throw new IdInvalidException("Passagem não cadastrados");
+        }
+
+        var consultaCliente = repository.findById(Long.valueOf(id));
+        if (consultaCliente.isEmpty()) {
+            throw new IdInvalidException("Passagem não cadastrados");
+        }
+//atualizar
+        atualizarCadastroParametros(requestDTO, consultaCliente);
+
+        var save = repository.save(consultaCliente.get());
+        return toResponseDTOUpdate(save);
+    }
+
+    private static void atualizarCadastroParametros(PassagemRequestDTO requestDTO, Optional<PassagemEntity> consultClient) {
+        consultClient.get().setEmail(requestDTO.getEmail());
+        consultClient.get().setNomeCliente(requestDTO.getNomeCliente());
+        consultClient.get().setSobrenome(requestDTO.getSobrenome());
+        consultClient.get().setPais(requestDTO.getPais());
+        consultClient.get().setEstado(requestDTO.getEstado());
+        consultClient.get().setCidade(requestDTO.getCidade());
+        consultClient.get().setFormaPagamento(requestDTO.getFormaPagamento());
+        consultClient.get().setCompanhiaArea(requestDTO.getCompanhiaArea());
+        consultClient.get().setCpf(requestDTO.getCpf());
+        consultClient.get().setEmail(requestDTO.getEmail());
+        consultClient.get().setCelular(requestDTO.getCelular());
+        consultClient.get().setDiaViagem(requestDTO.getDiaViagem());
+        consultClient.get().setQtdIntegrantes(requestDTO.getQtdIntegrantes());
+    }
+
+    @Override
     public PassagemResponseDTO bucarClienteCadastrado(String id) {
 
         try {
             if (id.contains(" ")) {
-                throw new IdInvalidException("id não existe ou o campo nao foi informado");
+                throw new IdInvalidException(ID_NAO_EXISTE_OU_O_CAMPO_NAO_FOI_INFORMADO);
             }
             if (id.isEmpty()) {
-                throw new IdInvalidException("id não existe ou o campo nao foi informado");
+                throw new IdInvalidException(ID_NAO_EXISTE_OU_O_CAMPO_NAO_FOI_INFORMADO);
             }
             if (id == null) {
-                throw new IdInvalidException("id não existe ou o campo nao foi informado");
+                throw new IdInvalidException(ID_NAO_EXISTE_OU_O_CAMPO_NAO_FOI_INFORMADO);
             }
             var result = repository.findById(Long.valueOf(id));
             if (result.isPresent()) {
@@ -127,11 +178,15 @@ public class PassagemServiceImpl implements PassagemService {
     public PassagemResponseDTO buscarTodosClientes() {
         log.info("Buscar todos cadastro dos clientes: ");
         var listCadastro = repository.findAll();
+        return toResponseBuscarAll(listCadastro);
+    }
+
+    private static PassagemResponseDTO toResponseBuscarAll(List<PassagemEntity> listCadastro) {
         PassagemResponseDTO responseDTO = new PassagemResponseDTO();
         responseDTO.setCode(HttpStatus.OK);
         responseDTO.setMessage("Dado buscado com sucesso:");
         responseDTO.setContent(listCadastro);
-
         return responseDTO;
+
     }
 }

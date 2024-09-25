@@ -14,4 +14,6 @@ public interface PassagemService {
     PassagemResponseDTO buscarTodosClientes();
 
     PassagemResponseDTO toResponseDTO(PassagemEntity passagemEntity);
+
+    PassagemResponseDTO atualizarCadastroCliente(String id, PassagemRequestDTO requestDTO);
 }
