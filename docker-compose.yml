@@ -60,7 +60,7 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus.yml/prometheus.yml:/etc/prometheus/prometheus.yml
     networks:
       - mynet
 
@@ -73,7 +73,7 @@ services:
 
 networks:
   broker-kafka:
-    driver: clea
+    driver: bridge
   mynet:
     driver: bridge
 

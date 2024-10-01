@@ -1,22 +1,27 @@
-spring:
-  datasource:
-    password: 1234
-    url: jdbc:postgresql://localhost:5432/memoriesclub
-    username: postgres
-    datasource:
-      driver-class-name: org.postgresql.Driver
-  jpa:
-    properties:
-      hibernate:
-        ddl-auto: update
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-
 management:
   endpoints:
     web:
       exposure:
-        include: '*'
-
+        include: 'health,prometheus'
+    enabled-by-default: 'false'
+  endpoint:
+    prometheus:
+      enabled: 'true'
+    health:
+      enabled: 'true'
+      show-details: always
+spring:
+  datasource:
+    username: postgres
+    url: jdbc:postgresql://localhost:5432/memoriesclub
+    datasource:
+      driver-class-name: org.postgresql.Driver
+    password: '1234'
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        ddl-auto: update
   kafka:
     template:
       observation-enabled: 'true'
