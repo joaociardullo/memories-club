@@ -10,6 +10,7 @@ import com.devjoao.passagem.mappper.PassagemMapper;
 import com.devjoao.passagem.repositorie.PassagemEntityRepository;
 import com.devjoao.passagem.service.PassagemServiceImpl;
 import com.devjoao.passagem.service.StringProducerService;
+import com.devjoao.passagem.validatorStrategy.ValidationManagerStratagy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -34,11 +35,13 @@ class PassagemControllerTest {
     EnderecoClient client;
     @Mock
     StringProducerService producerService;
+    @Mock
+    ValidationManagerStratagy validationManagerStratagy;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.initMocks(this);
-        service = new PassagemServiceImpl(repository, mapper, client, producerService);
+        service = new PassagemServiceImpl(repository, mapper, client, validationManagerStratagy, producerService);
     }
 
     @Test
