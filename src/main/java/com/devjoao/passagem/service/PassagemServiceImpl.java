@@ -5,16 +5,21 @@ import com.devjoao.passagem.dto.PassagemRequestDTO;
 import com.devjoao.passagem.dto.PassagemResponseDTO;
 import com.devjoao.passagem.entity.PassagemEntity;
 import com.devjoao.passagem.exceptions.CpfException;
-import com.devjoao.passagem.exceptions.CpfNullException;
 import com.devjoao.passagem.exceptions.IdInvalidException;
 import com.devjoao.passagem.exceptions.InvalidPropertiesFormatException;
 import com.devjoao.passagem.integration.EnderecoClient;
 import com.devjoao.passagem.mappper.PassagemMapper;
 import com.devjoao.passagem.repositorie.PassagemEntityRepository;
+import com.devjoao.passagem.validatorStrategy.ValidationStrategyCadastrar;
+import com.devjoao.passagem.validatorStrategy.ValidationManagerStratagy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -28,45 +33,38 @@ public class PassagemServiceImpl implements PassagemService {
     final PassagemEntityRepository repository;
     final PassagemMapper mapper;
     final EnderecoClient client;
+    final ValidationManagerStratagy validationManagerStratagy;
 
     private final StringProducerService producerService;
 
-    public PassagemServiceImpl(PassagemEntityRepository repository, PassagemMapper mapper, EnderecoClient client, StringProducerService producerService) {
+    public PassagemServiceImpl(PassagemEntityRepository repository, PassagemMapper mapper, EnderecoClient client, ValidationManagerStratagy validationManagerStratagy, StringProducerService producerService) {
         this.repository = repository;
         this.mapper = mapper;
         this.client = client;
+        this.validationManagerStratagy = validationManagerStratagy;
         this.producerService = producerService;
     }
 
     public PassagemResponseDTO cadastroPassagemCliente(PassagemRequestDTO requestDTO) throws InvalidPropertiesFormatException {
         log.info("Dados da passagem: [{}] ", requestDTO);
         try {
-            if (requestDTO.getCep().length() != 11 && requestDTO.getCep() == null) {
-                throw new NumberFormatException("Cep nao segue o padrão !");
-            }
-            if (requestDTO.getCpf().isEmpty()) {
-                throw new CpfNullException("Inserir o CPF");
-            }
-            if (requestDTO.getCpf().length() != 11) {
-                throw new CpfNullException("Tamanho de cpf invalido: Digite corretamente");
-            }
-            if (requestDTO.getDiaViagem() == null) {
-                throw new InvalidPropertiesFormatException("Obrigatorio passar a data da viagem.");
-            }
-            if (requestDTO.getEmail() == null || requestDTO.getEmail().isEmpty() || !requestDTO.getEmail().contains("@")) {
-                throw new InvalidPropertiesFormatException("Obrigatorio ter '@' no email.");
-            }
-            if (requestDTO.getNomeCliente().isBlank()) {
-                throw new InvalidPropertiesFormatException("Obrigatorio passar o nome do cliente.");
-            }
+            new ValidationManagerStratagy(Arrays.asList(
+                    new ValidationStrategyCadastrar(),
+                    new ValidationStrategyCadastrar.CpfValidationStrategy(),
+                    new ValidationStrategyCadastrar.DiaViagemValidationStrategy(),
+                    new ValidationStrategyCadastrar.EmailValidationStrategy(),
+                    new ValidationStrategyCadastrar.NomeClienteValidationStrategy(),
+                    new ValidationStrategyCadastrar.CpfExistenteValidationStrategy(repository)
+            ));
+            validationManagerStratagy.validate(requestDTO);
 
-            var  buscarcpf = repository.findByCpf(requestDTO.getCpf());
+            var buscarcpf = repository.findByCpf(requestDTO.getCpf());
             if (!buscarcpf.isEmpty()) {
                 buscarcpf.get(0).getCpf();
                 throw new CpfException("CPF não existe");
             }
             if (!buscarcpf.isEmpty() && buscarcpf.get(0).getCpf().equals(requestDTO.getCpf())) {
-                    throw new CpfException("CPF já cadastrado");
+                throw new CpfException("CPF já cadastrado");
             }
             log.info("Buscar endereco para cadastramento: [{}] ", requestDTO.getCep());
             EnderecoCepDTO cep = client.buscarEndereco(requestDTO.getCep());
@@ -189,4 +187,13 @@ public class PassagemServiceImpl implements PassagemService {
         return responseDTO;
 
     }
+
+    public String uploadsArquivo(MultipartFile file) throws IOException {
+        log.info("upload de arquivo ", file);
+        String filePath = "/uploads/" + file.getOriginalFilename();
+        File dest = new File(filePath);
+        file.transferTo(dest);
+        return filePath;
+    }
+
 }

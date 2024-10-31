@@ -9,6 +9,7 @@ import com.devjoao.passagem.exceptions.InvalidPropertiesFormatException;
 import com.devjoao.passagem.integration.EnderecoClient;
 import com.devjoao.passagem.mappper.PassagemMapper;
 import com.devjoao.passagem.repositorie.PassagemEntityRepository;
+import com.devjoao.passagem.validatorStrategy.ValidationManagerStratagy;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,12 +38,14 @@ class PassagemServiceImplTest {
     EnderecoClient client;
     @Mock
     StringProducerService producerService;
+    @Mock
+    ValidationManagerStratagy validationManagerStratagy;
 
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.initMocks(this);
-        service = new PassagemServiceImpl(repository, mapper, client, producerService);
+        service = new PassagemServiceImpl(repository, mapper, client, validationManagerStratagy, producerService);
     }
 
 
