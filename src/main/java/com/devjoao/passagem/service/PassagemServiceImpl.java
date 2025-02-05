@@ -13,6 +13,7 @@ import com.devjoao.passagem.repositorie.PassagemEntityRepository;
 import com.devjoao.passagem.validatorStrategy.ValidationStrategyCadastrar;
 import com.devjoao.passagem.validatorStrategy.ValidationManagerStratagy;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -173,6 +174,7 @@ public class PassagemServiceImpl implements PassagemService {
         }
     }
 
+    @Cacheable("passagem")
     public PassagemResponseDTO buscarTodosClientes() {
         log.info("Buscar todos cadastro dos clientes: ");
         var listCadastro = repository.findAll();
