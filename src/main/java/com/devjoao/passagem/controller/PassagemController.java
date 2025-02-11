@@ -29,14 +29,16 @@ public class PassagemController {
 
     @GetMapping("/{id}")
     @ApiOperation(value = "Metodo para buscar clientes passando seu id")
+    @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<PassagemResponseDTO> buscarCliente(@PathVariable("id") String id) {
         MDC.get("traceID");
-        return ResponseEntity.ok(service.bucarClienteCadastrado(id));
+        return ResponseEntity.ok(service.buscarClienteCadastrado(id));
 
     }
 
     @ApiOperation(value = "Busca todos os clientes")
     @GetMapping(value = "/buscarTodosClientes")
+    @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<PassagemResponseDTO> buscarTodosCliente() {
         return ResponseEntity.ok(service.buscarTodosClientes());
 
@@ -44,8 +46,17 @@ public class PassagemController {
 
     @ApiOperation(value = "atualizar cadastro")
     @PutMapping(value = "atualizar/{id}")
+    @ResponseStatus(HttpStatus.ACCEPTED)
     public ResponseEntity<PassagemResponseDTO> atualizarCadastro(@PathVariable String id,
                                                                  @RequestBody PassagemRequestDTO requestDTO) {
         return ResponseEntity.ok(service.atualizarCadastroCliente(id, requestDTO));
+    }
+
+    @ApiOperation(value = "deletar cadastro")
+    @DeleteMapping(value = "deletar/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<PassagemResponseDTO> deletarCadastro(@PathVariable Long id) {
+        return ResponseEntity.ok(service.deletar(id));
+
     }
 }

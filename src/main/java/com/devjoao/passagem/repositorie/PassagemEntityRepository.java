@@ -7,13 +7,11 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface PassagemEntityRepository extends JpaRepository<PassagemEntity, Long> {
 
-    @Query(value = "SELECT id, nome_cliente, sobrenome, dia_viagem, pais, cidade, forma_pagamento, quantidade_integrantes, companhia_area, cpf, celular, cep, logradouro, bairro, localidade, uf, estado, regiao,email\n" +
-            "FROM public.cadastro_passagem\n" +
-            "where cpf = cpf\n" +
-            "order by id desc ;",nativeQuery = true)
-    List<PassagemEntity> findByCpf(@Param("cpf") String cpf);
+    @Query(countQuery = "SELECT p.cpf FROM cadastro_passagem p WHERE CAST(p.cpf AS string) = :cpf", nativeQuery = true)
+    Optional<List<PassagemEntity>> findByCpf(@Param("cpf") String cpf);
 }

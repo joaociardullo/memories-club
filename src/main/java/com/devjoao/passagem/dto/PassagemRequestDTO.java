@@ -4,34 +4,25 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Builder;
 import lombok.Data;
 
+import java.time.LocalDate;
+
 @Data
 @Builder
 public class PassagemRequestDTO {
 
     private String nomeCliente;
-
     private String sobrenome;
-
     @JsonFormat(pattern = "dd-MM-yyyy")
     private String diaViagem;
-
     private String pais;
-
     private String estado;
-
     private String cidade;
-
     private String formaPagamento;
-
     private Integer qtdIntegrantes;
-
     private String companhiaArea;
-
     private String cpf;
-
     private String celular;
-
     private String cep;
-
     private String email;
+    private LocalDate dtCadastro;
 }

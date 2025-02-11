@@ -1,173 +1,148 @@
 package com.devjoao.passagem.service;
 
-import com.devjoao.passagem.dto.EnderecoCepDTO;
+import com.devjoao.passagem.controller.EnderecoController;
+import com.devjoao.passagem.dto.EnderecoDTO;
 import com.devjoao.passagem.dto.PassagemRequestDTO;
 import com.devjoao.passagem.dto.PassagemResponseDTO;
+import com.devjoao.passagem.entity.EnderecoEntity;
 import com.devjoao.passagem.entity.PassagemEntity;
 import com.devjoao.passagem.exceptions.CpfException;
 import com.devjoao.passagem.exceptions.IdInvalidException;
 import com.devjoao.passagem.exceptions.InvalidPropertiesFormatException;
 import com.devjoao.passagem.integration.EnderecoClient;
 import com.devjoao.passagem.mappper.PassagemMapper;
+import com.devjoao.passagem.repositorie.EnderecoEntityRepository;
 import com.devjoao.passagem.repositorie.PassagemEntityRepository;
-import com.devjoao.passagem.validatorStrategy.ValidationStrategyCadastrar;
-import com.devjoao.passagem.validatorStrategy.ValidationManagerStratagy;
+import com.devjoao.passagem.validatorStrategy.cadastrarStrategy.ValidatorContext;
+import com.devjoao.passagem.validatorStrategy.updateStrategy.IdValidator;
+import com.devjoao.passagem.validatorStrategy.updateStrategy.PassagemRequestDTOValidator;
+import com.devjoao.passagem.validatorStrategy.updateStrategy.ValidatorManager;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
+import java.time.LocalDate;
 import java.util.Objects;
-import java.util.Optional;
 
+import static com.devjoao.passagem.utils.ReponseUtils.getPassagemResponseDTO;
+import static com.devjoao.passagem.utils.ReponseUtils.toResponseBuscarAll;
 
 @Service
 @Slf4j
 public class PassagemServiceImpl implements PassagemService {
 
-    public static final String ID_NAO_EXISTE_OU_O_CAMPO_NAO_FOI_INFORMADO = "id não existe ou o campo nao foi informado";
+    public static final String PASSAGEM_NAO_CADASTRADOS = "Passagem não cadastrados";
     final PassagemEntityRepository repository;
+    final EnderecoEntityRepository enderecoRepository;
     final PassagemMapper mapper;
     final EnderecoClient client;
-    final ValidationManagerStratagy validationManagerStratagy;
+    final StringProducerService sendKafka;
+    final EnderecoController enderecoController;
+    final ValidatorManager validatorManager;
 
-    private final StringProducerService producerService;
 
-    public PassagemServiceImpl(PassagemEntityRepository repository, PassagemMapper mapper, EnderecoClient client, ValidationManagerStratagy validationManagerStratagy, StringProducerService producerService) {
-        this.repository = repository;
+    public PassagemServiceImpl(PassagemMapper mapper, PassagemEntityRepository passagemRepository,
+                               EnderecoEntityRepository enderecoRepository,
+                               EnderecoClient client,
+                               StringProducerService sendKafka,
+                               EnderecoController enderecoController,
+                               ValidatorManager validatorManager) {
+        this.repository = passagemRepository;
+        this.enderecoRepository = enderecoRepository;
         this.mapper = mapper;
         this.client = client;
-        this.validationManagerStratagy = validationManagerStratagy;
-        this.producerService = producerService;
+        this.sendKafka = sendKafka;
+        this.enderecoController = enderecoController;
+        this.validatorManager = validatorManager;
     }
 
     public PassagemResponseDTO cadastroPassagemCliente(PassagemRequestDTO requestDTO) throws InvalidPropertiesFormatException {
         log.info("Dados da passagem: [{}] ", requestDTO);
         try {
-            new ValidationManagerStratagy(Arrays.asList(
-                    new ValidationStrategyCadastrar(),
-                    new ValidationStrategyCadastrar.CpfValidationStrategy(),
-                    new ValidationStrategyCadastrar.DiaViagemValidationStrategy(),
-                    new ValidationStrategyCadastrar.EmailValidationStrategy(),
-                    new ValidationStrategyCadastrar.NomeClienteValidationStrategy(),
-                    new ValidationStrategyCadastrar.CpfExistenteValidationStrategy(repository)
-            ));
-            validationManagerStratagy.validate(requestDTO);
+            ValidatorContext validator;
+            validator = new ValidatorContext(repository);
+            validator.validate(requestDTO);
 
-            var buscarcpf = repository.findByCpf(requestDTO.getCpf());
-            if (!buscarcpf.isEmpty()) {
-                buscarcpf.get(0).getCpf();
-                throw new CpfException("CPF não existe");
-            }
-            if (!buscarcpf.isEmpty() && buscarcpf.get(0).getCpf().equals(requestDTO.getCpf())) {
-                throw new CpfException("CPF já cadastrado");
-            }
-            log.info("Buscar endereco para cadastramento: [{}] ", requestDTO.getCep());
-            EnderecoCepDTO cep = client.buscarEndereco(requestDTO.getCep());
+            consultaValidarCpf(requestDTO);
 
-            PassagemEntity passagem = mapper.toEntity(requestDTO);
+            EnderecoEntity enderecoSalvo = cadastrarBuscaCepEnderecoClient(requestDTO);
+            PassagemEntity passagem = mapper.toPassagem(requestDTO);
+            passagem.setDtCadastro(LocalDate.now());
+            passagem.setEndereco(enderecoSalvo);
 
-            EnderecoCepDTO enderecoCepDTO = getEnderecoCepDTO(cep);
-            passagem.setCep(enderecoCepDTO);
-            PassagemResponseDTO responseDTO = toResponseDTO(passagem);
             log.info("Salvando na Tabela: [{}] ", passagem);
-            repository.save(passagem);
-            producerService.sendMessage(requestDTO);
-            return responseDTO;
+            PassagemEntity passagemSalva = repository.save(passagem);
+            //para nao mandar para outra fila
+            //sendKafka.sendMessage(requestDTO);
+            return mapper.toResponse(passagemSalva);
+
         } catch (RuntimeException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private static EnderecoCepDTO getEnderecoCepDTO(EnderecoCepDTO cep) {
-        return EnderecoCepDTO.builder().cep(cep.getCep()).bairro(cep.getBairro()).uf(cep.getUf()).regiao(cep.getRegiao()).estado(cep.getEstado()).localidade(cep.getLocalidade()).logradouro(cep.getLogradouro()).bairro(cep.getBairro()).build();
+    private EnderecoEntity cadastrarBuscaCepEnderecoClient(PassagemRequestDTO requestDTO) {
+        log.info("Buscar endereco para cadastramento: [{}] ", requestDTO.getCep());
+        EnderecoDTO endereco = client.buscarEndereco(requestDTO.getCep());
+        EnderecoEntity enderecoMapper = mapper.toEndereco(endereco);
+        enderecoMapper.setDtCadastroEndereco(LocalDate.now());
+        return enderecoRepository.save(enderecoMapper);
     }
 
-    public PassagemResponseDTO toResponseDTO(PassagemEntity passagemEntity) {
-        PassagemResponseDTO responseDTO = new PassagemResponseDTO();
-        responseDTO.setCode(HttpStatus.CREATED);
-        responseDTO.setMessage("Dados cadastrado com sucesso:");
-        responseDTO.setContent(passagemEntity);
-        return responseDTO;
-    }
+    private void consultaValidarCpf(PassagemRequestDTO requestDTO) {
+        if (repository.findByCpf(requestDTO.getCpf()).isPresent())
+            log.info("CPF encontrado");
+        else
+            throw new CpfException("CPF não encontrado");
 
-    public PassagemResponseDTO toResponseDTOUpdate(PassagemEntity passagemEntity) {
-        PassagemResponseDTO responseDTO = new PassagemResponseDTO();
-        responseDTO.setCode(HttpStatus.ACCEPTED);
-        responseDTO.setMessage("Dados cadastrado com sucesso:");
-        responseDTO.setContent(passagemEntity);
-        return responseDTO;
     }
 
     @Override
-    public PassagemResponseDTO atualizarCadastroCliente(String id, PassagemRequestDTO requestDTO) {
-        log.info("PASSEI AQUI");
-        if (id.contains(" ")) {
-            throw new IdInvalidException(ID_NAO_EXISTE_OU_O_CAMPO_NAO_FOI_INFORMADO);
+    public PassagemResponseDTO atualizarCadastroCliente(String id, PassagemRequestDTO passagemRequestDTO) {
 
-        }
-        if (id == null) {
-            throw new IdInvalidException(ID_NAO_EXISTE_OU_O_CAMPO_NAO_FOI_INFORMADO);
-        }
-        if (Objects.isNull(requestDTO)) {
-            throw new IdInvalidException("Passagem não cadastrados");
-        }
+        validatorManager.addValidator(new IdValidator());
+        validatorManager.addValidator(new PassagemRequestDTOValidator());
+        validatorManager.validate(id);
+        validatorManager.validate(passagemRequestDTO);
 
-        var consultaCliente = repository.findById(Long.valueOf(id));
-        if (consultaCliente.isEmpty()) {
-            throw new IdInvalidException("Passagem não cadastrados");
-        }
-//atualizar
-        atualizarCadastroParametros(requestDTO, consultaCliente);
+        if (Objects.isNull(passagemRequestDTO))
+            throw new IdInvalidException(PASSAGEM_NAO_CADASTRADOS);
 
-        var save = repository.save(consultaCliente.get());
-        return toResponseDTOUpdate(save);
-    }
+        repository.findById(Long.valueOf(id))
+                .orElseThrow(() -> new IdInvalidException(PASSAGEM_NAO_CADASTRADOS));
 
-    private static void atualizarCadastroParametros(PassagemRequestDTO requestDTO, Optional<PassagemEntity> consultClient) {
-        consultClient.get().setEmail(requestDTO.getEmail());
-        consultClient.get().setNomeCliente(requestDTO.getNomeCliente());
-        consultClient.get().setSobrenome(requestDTO.getSobrenome());
-        consultClient.get().setPais(requestDTO.getPais());
-        consultClient.get().setEstado(requestDTO.getEstado());
-        consultClient.get().setCidade(requestDTO.getCidade());
-        consultClient.get().setFormaPagamento(requestDTO.getFormaPagamento());
-        consultClient.get().setCompanhiaArea(requestDTO.getCompanhiaArea());
-        consultClient.get().setCpf(requestDTO.getCpf());
-        consultClient.get().setEmail(requestDTO.getEmail());
-        consultClient.get().setCelular(requestDTO.getCelular());
-        consultClient.get().setDiaViagem(requestDTO.getDiaViagem());
-        consultClient.get().setQtdIntegrantes(requestDTO.getQtdIntegrantes());
+        PassagemEntity mapperAtualizar = mapper.toAtualizar(passagemRequestDTO);
+
+        var passagemCadastroAtualizado = repository.save(mapperAtualizar);
+        passagemCadastroAtualizado.setDtCadastroAtualizado(LocalDate.now());
+
+        //sendKafka.sendMessage(passagemRequestDTO);
+
+        return mapper.toResponse(passagemCadastroAtualizado);
     }
 
     @Override
-    public PassagemResponseDTO bucarClienteCadastrado(String id) {
+    public PassagemResponseDTO deletar(Long id) {
+        repository.deleteById(id);
+        return PassagemResponseDTO.builder()
+                .code(HttpStatus.OK)
+                .message("Cadastro Deletado")
+                .content(id)
+                .build();
+    }
 
+    @Override
+    public PassagemResponseDTO buscarClienteCadastrado(String id) {
         try {
-            if (id.contains(" ")) {
-                throw new IdInvalidException(ID_NAO_EXISTE_OU_O_CAMPO_NAO_FOI_INFORMADO);
-            }
-            if (id.isEmpty()) {
-                throw new IdInvalidException(ID_NAO_EXISTE_OU_O_CAMPO_NAO_FOI_INFORMADO);
-            }
-            if (id == null) {
-                throw new IdInvalidException(ID_NAO_EXISTE_OU_O_CAMPO_NAO_FOI_INFORMADO);
-            }
+            validatorManager.validate(id);
+
             var result = repository.findById(Long.valueOf(id));
             if (result.isPresent()) {
-                var responseDTO = new PassagemResponseDTO();
-                responseDTO.setCode(HttpStatus.ACCEPTED);
-                responseDTO.setMessage("Dado buscado com sucesso:");
-                responseDTO.setContent(result);
-                return responseDTO;
+                return getPassagemResponseDTO(result);
             } else {
                 log.error("Erro ao fazer a busca");
-                throw new InvalidPropertiesFormatException("erro de sistema");
+                throw new InvalidPropertiesFormatException("erro de sistema, falha ao buscar ID na base de dados");
             }
         } catch (InvalidPropertiesFormatException e) {
             throw new IdInvalidException(e.getMessage());
@@ -176,26 +151,12 @@ public class PassagemServiceImpl implements PassagemService {
 
     @Cacheable("passagem")
     public PassagemResponseDTO buscarTodosClientes() {
-        log.info("Buscar todos cadastro dos clientes: ");
-        var listCadastro = repository.findAll();
-        return toResponseBuscarAll(listCadastro);
+        try {
+            log.info("Buscar todos cadastro dos clientes: ");
+            var listCadastro = repository.findAll();
+            return toResponseBuscarAll(listCadastro);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
-
-    private static PassagemResponseDTO toResponseBuscarAll(List<PassagemEntity> listCadastro) {
-        PassagemResponseDTO responseDTO = new PassagemResponseDTO();
-        responseDTO.setCode(HttpStatus.OK);
-        responseDTO.setMessage("Dado buscado com sucesso:");
-        responseDTO.setContent(listCadastro);
-        return responseDTO;
-
-    }
-
-    public String uploadsArquivo(MultipartFile file) throws IOException {
-        log.info("upload de arquivo ", file);
-        String filePath = "/uploads/" + file.getOriginalFilename();
-        File dest = new File(filePath);
-        file.transferTo(dest);
-        return filePath;
-    }
-
 }

@@ -1,7 +1,7 @@
-package com.devjoao.passagem.validatorStrategy;
+package com.devjoao.passagem.validatorStrategy.cadastrarStrategy;
 
 import com.devjoao.passagem.dto.PassagemRequestDTO;
 
-public interface ValidacaoStrategy {
+public interface ValidationStrategy  {
     void validar(PassagemRequestDTO requestDTO);
 }

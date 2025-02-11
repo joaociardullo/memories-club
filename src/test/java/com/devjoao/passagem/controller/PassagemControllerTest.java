@@ -1,25 +1,23 @@
 package com.devjoao.passagem.controller;
 
-import com.devjoao.passagem.dto.EnderecoCepDTO;
 import com.devjoao.passagem.dto.PassagemRequestDTO;
 import com.devjoao.passagem.dto.PassagemResponseDTO;
-import com.devjoao.passagem.entity.PassagemEntity;
-import com.devjoao.passagem.exceptions.InvalidPropertiesFormatException;
 import com.devjoao.passagem.integration.EnderecoClient;
 import com.devjoao.passagem.mappper.PassagemMapper;
+import com.devjoao.passagem.repositorie.EnderecoEntityRepository;
 import com.devjoao.passagem.repositorie.PassagemEntityRepository;
 import com.devjoao.passagem.service.PassagemServiceImpl;
 import com.devjoao.passagem.service.StringProducerService;
-import com.devjoao.passagem.validatorStrategy.ValidationManagerStratagy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class PassagemControllerTest {
 
@@ -30,73 +28,64 @@ class PassagemControllerTest {
     @Mock
     PassagemEntityRepository repository;
     @Mock
+    EnderecoEntityRepository enderecoRepository;
+    @Mock
     PassagemMapper mapper;
     @Mock
     EnderecoClient client;
     @Mock
-    StringProducerService producerService;
-    @Mock
-    ValidationManagerStratagy validationManagerStratagy;
+    StringProducerService sendKafka;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.initMocks(this);
-        service = new PassagemServiceImpl(repository, mapper, client, validationManagerStratagy, producerService);
     }
 
+    // Successfully create new passenger booking with valid request data
     @Test
-    void test_successfully_register_passagem_with_valid_data() throws InvalidPropertiesFormatException, java.util.InvalidPropertiesFormatException {
+    public void test_create_passenger_booking_success() {
         PassagemRequestDTO requestDTO = PassagemRequestDTO.builder()
-                .nomeCliente("Joao")
-                .sobrenome("Silva")
-                .diaViagem("25-12-2023")
-                .pais("Brasil")
-                .estado("SP")
-                .cidade("Sao Paulo")
-                .formaPagamento("Cartao")
-                .qtdIntegrantes(1)
-                .companhiaArea("LATAM")
+                .nomeCliente("John")
+                .sobrenome("Doe")
                 .cpf("12345678901")
-                .celular("11987654321")
+                .email("john@test.com")
                 .cep("12345678")
-                .email("joao.silva@example.com")
+                .diaViagem("01-01-2024")
                 .build();
 
-        EnderecoCepDTO enderecoCepDTO = EnderecoCepDTO.builder()
-                .cep("03380160")
-                .logradouro("teste")
-                .localidade("SP")
-                .bairro("SP")
-                .regiao("SP")
-                .uf("SP")
+        PassagemResponseDTO responseDTO = PassagemResponseDTO.builder()
+                .code(HttpStatus.OK)
+                .message("Success")
                 .build();
 
-        PassagemEntity passagemEntity = new PassagemEntity();
-        passagemEntity.setNomeCliente(requestDTO.getNomeCliente());
-        passagemEntity.setSobrenome(requestDTO.getSobrenome());
-        passagemEntity.setDiaViagem(requestDTO.getDiaViagem());
-        passagemEntity.setPais(requestDTO.getPais());
-        passagemEntity.setEstado(requestDTO.getEstado());
-        passagemEntity.setCidade(requestDTO.getCidade());
-        passagemEntity.setFormaPagamento(requestDTO.getFormaPagamento());
-        passagemEntity.setQtdIntegrantes(requestDTO.getQtdIntegrantes());
-        passagemEntity.setCompanhiaArea(requestDTO.getCompanhiaArea());
-        passagemEntity.setCpf(requestDTO.getCpf());
-        passagemEntity.setCelular(requestDTO.getCelular());
-        passagemEntity.setCep(enderecoCepDTO);
-        passagemEntity.setEmail(requestDTO.getEmail());
+        when(service.cadastroPassagemCliente(requestDTO)).thenReturn(responseDTO);
 
-        PassagemResponseDTO responseDTO = new PassagemResponseDTO();
-        responseDTO.setCode(HttpStatus.CREATED);
-        responseDTO.setMessage("Dados cadastrado com sucesso:");
-        responseDTO.setContent(passagemEntity);
-
-        when(mapper.toEntity(requestDTO)).thenReturn(passagemEntity);
-        when(client.buscarEndereco(requestDTO.getCep())).thenReturn(enderecoCepDTO);
-
-        var response = controller.cadastarClientePassagem(requestDTO);
+        ResponseEntity<PassagemResponseDTO> response = controller.cadastarClientePassagem(requestDTO);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(responseDTO, response.getBody());
+        verify(service).cadastroPassagemCliente(requestDTO);
+    }
+
+    // Returns 200 OK with PassagemResponseDTO when valid ID is provided
+    @Test
+    void test_buscar_cliente_returns_200_ok_with_valid_id() {
+        PassagemServiceImpl serviceMock = mock(PassagemServiceImpl.class);
+        PassagemController controller = new PassagemController(serviceMock);
+        String validId = "123";
+        PassagemResponseDTO expectedResponse = PassagemResponseDTO.builder()
+                .code(HttpStatus.OK)
+                .message("Success")
+                .content("Test content")
+                .build();
+
+        when(serviceMock.buscarClienteCadastrado(validId)).thenReturn(expectedResponse);
+
+        ResponseEntity<PassagemResponseDTO> response = controller.buscarCliente(validId);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(expectedResponse, response.getBody());
+        verify(serviceMock).buscarClienteCadastrado(validId);
     }
 
 }

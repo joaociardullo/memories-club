@@ -87,5 +87,18 @@ public class ExceptionGlobalHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(value = {CepInvalidExcpetion.class})
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ResponseEntity<ErrorResponseDTO>CepInvalidExcpetion (CepInvalidExcpetion ex) {
+        var errorResponse = ErrorResponseDTO.builder()
+                .status(String.valueOf(HttpStatus.BAD_REQUEST.value()))
+                .path("/passagem/cadastrarPassagem")
+                .message(ex.getMessage())
+                .erro(ex.getLocalizedMessage())
+                .timesStamp(String.valueOf(LocalDateTime.now()))
+                .build();
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
 
 }
