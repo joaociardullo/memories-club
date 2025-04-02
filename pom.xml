@@ -27,7 +27,7 @@
         <url/>
     </scm>
     <properties>
-        <java.version>17</java.version>
+        <java.version>21</java.version>
         <org.mapstruct.version>1.6.0</org.mapstruct.version>
     </properties>
     <dependencies>
@@ -120,6 +120,10 @@
 
     </dependencies>
 
+
+
+
+
     <build>
         <plugins>
             <plugin>
@@ -153,6 +157,15 @@
                 </configuration>
             </plugin>
         </plugins>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>banner.txt</include>
+                </includes>
+            </resource>
+        </resources>
     </build>
 
 </project>
