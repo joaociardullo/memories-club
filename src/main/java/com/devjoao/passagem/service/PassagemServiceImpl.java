@@ -6,7 +6,6 @@ import com.devjoao.passagem.dto.PassagemRequestDTO;
 import com.devjoao.passagem.dto.PassagemResponseDTO;
 import com.devjoao.passagem.entity.EnderecoEntity;
 import com.devjoao.passagem.entity.PassagemEntity;
-import com.devjoao.passagem.exceptions.CpfException;
 import com.devjoao.passagem.exceptions.IdInvalidException;
 import com.devjoao.passagem.exceptions.InvalidPropertiesFormatException;
 import com.devjoao.passagem.integration.EnderecoClient;
@@ -21,9 +20,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 import static com.devjoao.passagem.utils.ReponseUtils.getPassagemResponseDTO;
 import static com.devjoao.passagem.utils.ReponseUtils.toResponseBuscarAll;
@@ -91,12 +94,25 @@ public class PassagemServiceImpl implements PassagemService {
     }
 
     private void consultaValidarCpf(PassagemRequestDTO requestDTO) {
+        Optional<List<PassagemEntity>> byCpf = repository.findByCpf(String.valueOf(requestDTO));
+
+        Stream<Boolean> booleanStream = byCpf.get().stream().map(x -> x.getCpf().equals(requestDTO.getCpf().toString()));
+
+        log.info(booleanStream.toString());
+
         if (repository.findByCpf(requestDTO.getCpf()).isPresent())
             log.info("CPF encontrado");
-        else
-            throw new CpfException("CPF não encontrado");
 
+        boolean cpfJaCadastrado = byCpf
+                .map(lista -> lista.stream().anyMatch(passagem -> passagem.getCpf().equals(requestDTO.getCpf())))
+                .orElse(false);
+
+        if (cpfJaCadastrado) {
+            log.info("CPF JÁ CADASTRADO NA BASE DE DADOS: {}", requestDTO.getCpf());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF já cadastrado.");
+        }
     }
+
 
     @Override
     public PassagemResponseDTO atualizarCadastroCliente(String id, PassagemRequestDTO passagemRequestDTO) {
@@ -153,8 +169,8 @@ public class PassagemServiceImpl implements PassagemService {
     public PassagemResponseDTO buscarTodosClientes() {
         try {
             log.info("Buscar todos cadastro dos clientes: ");
-            var listCadastro = repository.findAll();
-            return toResponseBuscarAll(listCadastro);
+            List<PassagemEntity> listCadastros = repository.findAll();
+            return toResponseBuscarAll(listCadastros);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
