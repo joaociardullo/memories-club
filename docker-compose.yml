@@ -1,15 +1,19 @@
 version: '3.8'
 
 services:
-  database:
-    image: postgres
-    environment:
-      POSTGRES_DB: memoriesclub
-      POSTGRES_PASSWORD: 1234
+  mysql:
+    image: mysql
     ports:
-      - "5432:5432"
-    networks:
-      - mynet
+      - "3306:3306"
+    expose:
+      - "3306"
+    environment:
+      - MYSQL_USER=admin
+      - MYSQL_PASSWORD=joao
+      - MYSQL_DATABASE=db_banco_sistema
+      - MYSQL_ROOT_PASSWORD=root
+    volumes:
+      - "./conf.d:/etc/mysql/conf.d:ro"
 
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
@@ -46,7 +50,6 @@ services:
     environment:
       KAFKA_BROKERCONNECT: kafka:29092
 
-
   loki:
     image: grafana/loki:2.9.0
     ports:
@@ -71,9 +74,11 @@ services:
     networks:
       - mynet
 
+volumes:
+  db_data:
+
 networks:
   broker-kafka:
     driver: bridge
   mynet:
     driver: bridge
-

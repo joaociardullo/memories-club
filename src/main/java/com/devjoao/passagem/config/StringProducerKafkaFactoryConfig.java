@@ -14,11 +14,11 @@ import java.util.HashMap;
 
 @Configuration
 @RequiredArgsConstructor
-public class StringProducerFactoryConfig {
+public class StringProducerKafkaFactoryConfig {
 
     private final KafkaProperties properties;
 
-    @Bean  //serve para serealizar
+    @Bean  //serve para serealizar a menssagem do kafka
     public ProducerFactory<String, String> producerFactory() {
         var configs = new HashMap<String, Object>();
         configs.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, properties.getBootstrapServers()); //porta do kafka

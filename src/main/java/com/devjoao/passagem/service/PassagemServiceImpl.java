@@ -40,7 +40,7 @@ public class PassagemServiceImpl implements PassagemService {
     final EnderecoEntityRepository enderecoRepository;
     final PassagemMapper mapper;
     final EnderecoClient client;
-    final StringProducerService sendKafka;
+    final StringProducerKafkaService sendKafka;
     final EnderecoController enderecoController;
     final ValidatorManager validatorManager;
 
@@ -48,7 +48,7 @@ public class PassagemServiceImpl implements PassagemService {
     public PassagemServiceImpl(PassagemMapper mapper, PassagemEntityRepository passagemRepository,
                                EnderecoEntityRepository enderecoRepository,
                                EnderecoClient client,
-                               StringProducerService sendKafka,
+                               StringProducerKafkaService sendKafka,
                                EnderecoController enderecoController,
                                ValidatorManager validatorManager) {
         this.repository = passagemRepository;

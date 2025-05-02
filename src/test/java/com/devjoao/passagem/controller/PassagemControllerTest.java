@@ -7,7 +7,7 @@ import com.devjoao.passagem.mappper.PassagemMapper;
 import com.devjoao.passagem.repositorie.EnderecoEntityRepository;
 import com.devjoao.passagem.repositorie.PassagemEntityRepository;
 import com.devjoao.passagem.service.PassagemServiceImpl;
-import com.devjoao.passagem.service.StringProducerService;
+import com.devjoao.passagem.service.StringProducerKafkaService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -34,7 +34,7 @@ class PassagemControllerTest {
     @Mock
     EnderecoClient client;
     @Mock
-    StringProducerService sendKafka;
+    StringProducerKafkaService sendKafka;
 
     @BeforeEach
     void setUp() {

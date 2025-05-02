@@ -2,19 +2,13 @@ package com.devjoao.passagem.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.Data;
 
 import java.time.LocalDate;
 
 @Entity
 @Table(name = "cadastro_passagem")
-@Getter
-@Setter
-@ToString
-@RequiredArgsConstructor
+@Data
 public class PassagemEntity {
 
     @Id

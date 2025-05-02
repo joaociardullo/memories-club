@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 @Log4j2
 @RequiredArgsConstructor
 @Service
-public class StringProducerService {
+public class StringProducerKafkaService {
 
     private final KafkaTemplate<String, String> kafkaTemplate;
 
@@ -18,7 +18,7 @@ public class StringProducerService {
             log.error("Mensagem nula ", passagemRequestDTO);
             throw new RuntimeException();
         } else {
-            log.info("Menssagem enviada :::: {} ", passagemRequestDTO);
+            log.info("[KAFKA SENDER - topic passages] :::: {}", passagemRequestDTO);
             kafkaTemplate.send("str-topic", passagemRequestDTO.toString());
         }
     }
