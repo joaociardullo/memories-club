@@ -4,6 +4,7 @@ import com.devjoao.passagem.dto.PassagemRequestDTO;
 import com.devjoao.passagem.dto.PassagemResponseDTO;
 import com.devjoao.passagem.service.PassagemServiceImpl;
 import io.swagger.annotations.ApiOperation;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -22,7 +23,7 @@ public class PassagemController {
     @PostMapping("/cadastrarPassagem")
     @ApiOperation(value = "Metodo principal para cadastrar cliente novo onde é enviado para uma fila")
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<PassagemResponseDTO> cadastarClientePassagem(@RequestBody PassagemRequestDTO requestDTO) {
+    public ResponseEntity<PassagemResponseDTO> cadastarClientePassagem(@RequestBody @Valid PassagemRequestDTO requestDTO) {
         var response = service.cadastroPassagemCliente(requestDTO);
         return ResponseEntity.ok(response);
     }

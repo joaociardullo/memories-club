@@ -2,6 +2,7 @@ package com.devjoao.passagem.controller;
 
 import com.devjoao.passagem.dto.EnderecoDTO;
 import com.devjoao.passagem.integration.EnderecoClient;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,7 +18,7 @@ public class EnderecoController {
     private final EnderecoClient client;
 
     @GetMapping("/{cep}")
-    public ResponseEntity<EnderecoDTO> buscarEndereco(@PathVariable("cep") String cep) {
+    public ResponseEntity<EnderecoDTO> buscarEndereco(@PathVariable("cep") @Valid String cep) {
         var result = client.buscarEndereco(cep);
         return ResponseEntity.ok(result);
     }
