@@ -25,6 +25,7 @@ public class PassagemController {
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<PassagemResponseDTO> cadastarClientePassagem(@RequestBody @Valid PassagemRequestDTO requestDTO) {
         var response = service.cadastroPassagemCliente(requestDTO);
+        log.info("Resposta do cadastro: [{}] ", response);
         return ResponseEntity.ok(response);
     }
 
