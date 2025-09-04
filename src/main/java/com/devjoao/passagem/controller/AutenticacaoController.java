@@ -31,7 +31,6 @@ public class AutenticacaoController {
         var authenticationToken = new UsernamePasswordAuthenticationToken(usuarioLoginDTO.login(), usuarioLoginDTO.senha());
         var authentication = manager.authenticate(authenticationToken);
 
-        //var usuario = (UsuarioSecurity) authentication.getPrincipal();
         var tokenJWT = service.gerarToken(usuarioLoginDTO);
         log.info("Token gerado com sucesso: {} ", tokenJWT);
 
