@@ -1,4 +1,4 @@
-package com.devjoao.passagem.service;
+package com.devjoao.passagem.service.impl;
 
 import com.devjoao.passagem.controller.EnderecoController;
 import com.devjoao.passagem.dto.EnderecoDTO;
@@ -13,6 +13,8 @@ import com.devjoao.passagem.integration.EnderecoClient;
 import com.devjoao.passagem.mappper.PassagemMapper;
 import com.devjoao.passagem.repositorie.EnderecoEntityRepository;
 import com.devjoao.passagem.repositorie.PassagemEntityRepository;
+import com.devjoao.passagem.service.PassagemService;
+import com.devjoao.passagem.service.StringProducerKafkaService;
 import com.devjoao.passagem.validatorStrategy.cadastrarStrategy.ValidatorContext;
 import com.devjoao.passagem.validatorStrategy.updateStrategy.IdValidator;
 import com.devjoao.passagem.validatorStrategy.updateStrategy.PassagemRequestDTOValidator;
@@ -41,6 +43,7 @@ public class PassagemServiceImpl implements PassagemService {
     final StringProducerKafkaService sendKafka;
     final EnderecoController enderecoController;
     final ValidatorManager validatorManager;
+    final S3ServiceImpl s3Service;
 
 
     public PassagemServiceImpl(PassagemMapper mapper, PassagemEntityRepository passagemRepository,
@@ -48,7 +51,7 @@ public class PassagemServiceImpl implements PassagemService {
                                EnderecoClient client,
                                StringProducerKafkaService sendKafka,
                                EnderecoController enderecoController,
-                               ValidatorManager validatorManager) {
+                               ValidatorManager validatorManager, S3ServiceImpl s3Service) {
         this.repository = passagemRepository;
         this.enderecoRepository = enderecoRepository;
         this.mapper = mapper;
@@ -56,6 +59,7 @@ public class PassagemServiceImpl implements PassagemService {
         this.sendKafka = sendKafka;
         this.enderecoController = enderecoController;
         this.validatorManager = validatorManager;
+        this.s3Service = s3Service;
     }
 
     public PassagemResponseDTO cadastroPassagemCliente(PassagemRequestDTO requestDTO) throws InvalidPropertiesFormatException {
@@ -76,6 +80,7 @@ public class PassagemServiceImpl implements PassagemService {
             PassagemEntity passagemSalva = repository.save(passagem);
             //para nao mandar para outra fila
             //sendKafka.sendMessage(requestDTO);
+            s3Service.uploadFile("C:\\workspace projeto pessoal\\passagemMemoriesClub\\Dockerfile"); //Arquivo de teste
             return mapper.toResponse(passagemSalva);
 
         } catch (RuntimeException e) {
