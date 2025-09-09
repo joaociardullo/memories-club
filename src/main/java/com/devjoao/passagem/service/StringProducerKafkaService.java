@@ -4,6 +4,7 @@ import com.devjoao.passagem.dto.PassagemRequestDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Log4j2
@@ -13,6 +14,7 @@ public class StringProducerKafkaService {
 
     private final KafkaTemplate<String, String> kafkaTemplate;
 
+    @Async
     public void sendMessage(PassagemRequestDTO passagemRequestDTO) {
         if (passagemRequestDTO == null) {
             log.error("Mensagem nula ", passagemRequestDTO);
