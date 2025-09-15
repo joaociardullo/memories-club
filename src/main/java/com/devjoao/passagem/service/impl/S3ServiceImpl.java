@@ -26,7 +26,7 @@ public class S3ServiceImpl implements S3Service {
     public void uploadFile(String filePath) {
         s3Client.putObject(
                 PutObjectRequest.builder()
-                        .bucket(MEUBUCKETPASSAGEM.name())
+                        .bucket(MEUBUCKETPASSAGEM.getNome())
                         .key(filePath)
                         .build(),
                 RequestBody.fromFile(new File(filePath))
@@ -37,7 +37,7 @@ public class S3ServiceImpl implements S3Service {
     public void downloadFile(String keyName, String destinationPath) {
         s3Client.getObject(
                 GetObjectRequest.builder()
-                        .bucket(MEUBUCKETPASSAGEM.name())
+                        .bucket(MEUBUCKETPASSAGEM.getNome())
                         .key(keyName)
                         .build(),
                 Paths.get(destinationPath)
