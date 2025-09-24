@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 @Builder
@@ -25,4 +26,5 @@ public class PassagemRequestDTO {
     private String cep;
     private String email;
     private LocalDate dtCadastro;
+    private List<Fotos> fotos;
 }

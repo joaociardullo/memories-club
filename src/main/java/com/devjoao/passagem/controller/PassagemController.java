@@ -2,7 +2,7 @@ package com.devjoao.passagem.controller;
 
 import com.devjoao.passagem.dto.PassagemRequestDTO;
 import com.devjoao.passagem.dto.PassagemResponseDTO;
-import com.devjoao.passagem.service.PassagemServiceImpl;
+import com.devjoao.passagem.service.impl.PassagemServiceImpl;
 import io.swagger.annotations.ApiOperation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

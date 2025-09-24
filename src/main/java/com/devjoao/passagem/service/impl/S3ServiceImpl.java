@@ -1,5 +1,6 @@
 package com.devjoao.passagem.service.impl;
 
+import com.devjoao.passagem.dto.Fotos;
 import com.devjoao.passagem.service.S3Service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -8,8 +9,8 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
-import java.io.File;
 import java.nio.file.Paths;
+import java.util.Base64;
 
 import static com.devjoao.passagem.enums.Buckets.MEUBUCKETPASSAGEM;
 
@@ -23,15 +24,20 @@ public class S3ServiceImpl implements S3Service {
         this.s3Client = s3Client;
     }
 
-    public void uploadFile(String filePath) {
+    public void uploadFile(Fotos fotos) {
+        String base64Data = fotos.getFotoCliente();
+        byte[] fileBytes = Base64.getDecoder().decode(base64Data);
+
+        String key = fotos.getFileName();
         s3Client.putObject(
                 PutObjectRequest.builder()
                         .bucket(MEUBUCKETPASSAGEM.getNome())
-                        .key(filePath)
+                        .key(key)
+                        .contentType(fotos.getFileType())
                         .build(),
-                RequestBody.fromFile(new File(filePath))
+                RequestBody.fromBytes(fileBytes)
         );
-        log.info("Arquivo: [{}] foi enviado com sucesso", filePath);
+        log.info("Arquivo: [{}] foi enviado com sucesso", fotos.getFileName());
     }
 
     public void downloadFile(String keyName, String destinationPath) {

@@ -79,8 +79,8 @@ public class PassagemServiceImpl implements PassagemService {
             log.info("Salvando na Tabela: [{}] ", passagem);
             PassagemEntity passagemSalva = repository.save(passagem);
             //para nao mandar para outra fila
-            //sendKafka.sendMessage(requestDTO);
-            s3Service.uploadFile("C:\\workspace projeto pessoal\\passagemMemoriesClub\\Dockerfile"); //Arquivo de teste
+            sendKafka.sendMessage(null);
+            s3Service.uploadFile(requestDTO.getFotos().get(0));//salva a foto do cliente
             return mapper.toResponse(passagemSalva);
 
         } catch (RuntimeException e) {
