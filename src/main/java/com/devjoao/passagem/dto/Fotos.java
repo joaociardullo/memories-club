@@ -1,10 +1,11 @@
 package com.devjoao.passagem.dto;
 
-import lombok.Data;
+import lombok.Builder;
 
-@Data
-public class Fotos {
-    private String fileName;
-    private String fileType;
-    private String fotoCliente;
+@Builder
+public record Fotos(
+        String fileName,
+        String fileType,
+        String fotoCliente
+) implements java.io.Serializable {
 }

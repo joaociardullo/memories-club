@@ -25,19 +25,19 @@ public class S3ServiceImpl implements S3Service {
     }
 
     public void uploadFile(Fotos fotos) {
-        String base64Data = fotos.getFotoCliente();
+        String base64Data = fotos.fotoCliente();
         byte[] fileBytes = Base64.getDecoder().decode(base64Data);
 
-        String key = fotos.getFileName();
+        String key = fotos.fileName();
         s3Client.putObject(
                 PutObjectRequest.builder()
                         .bucket(MEUBUCKETPASSAGEM.getNome())
                         .key(key)
-                        .contentType(fotos.getFileType())
+                        .contentType(fotos.fileType())
                         .build(),
                 RequestBody.fromBytes(fileBytes)
         );
-        log.info("Arquivo: [{}] foi enviado com sucesso", fotos.getFileName());
+        log.info("Arquivo: [{}] foi enviado com sucesso", fotos.fileName());
     }
 
     public void downloadFile(String keyName, String destinationPath) {
